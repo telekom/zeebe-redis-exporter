@@ -14,7 +14,7 @@ public class RedisContainer extends GenericContainer<RedisContainer> {
   public static Integer PORT = 6379;
   public static String ALIAS = "redis";
 
-  protected RedisContainer() {
+  public RedisContainer() {
     super(format(IMAGE_AND_VERSION_FORMAT, REDIS_DOCKER_IMAGE_NAME, VERSION));
   }
 

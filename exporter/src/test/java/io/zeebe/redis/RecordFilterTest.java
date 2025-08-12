@@ -12,6 +12,9 @@ import io.zeebe.redis.exporter.ExporterConfiguration;
 import io.zeebe.redis.exporter.RecordFilter;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.zeebe.redis.exporter.ExporterConfiguration;
+import io.zeebe.redis.exporter.RecordFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +29,7 @@ public class RecordFilterTest {
     mockConfig.setEnabledRecordTypes("EVENT,COMMAND");
     mockConfig.setEnabledValueTypes("USER_TASK,JOB");
     mockConfig.setEnabledIntents("CREATED,UPDATED");
+    mockConfig.setEnabledTenants("tenantA,tenantB");
 
     recordFilter = new RecordFilter(mockConfig);
   }
@@ -90,6 +94,21 @@ public class RecordFilterTest {
     assertTrue(recordFilter.acceptIntent(DeploymentIntent.CREATED));
   }
 
+  public void testAcceptTenant() {
+    // Test with allowed tenants
+    assertTrue(recordFilter.acceptTenant(createTenantOwned("tenantA")));
+    assertTrue(recordFilter.acceptTenant(createTenantOwned("tenantB")));
+    assertFalse(recordFilter.acceptTenant(createTenantOwned("unknownTenant")));
+  }
+
+  @Test
+  public void testAcceptTenantWithCaseSensitivity() {
+    // Test case sensitivity - tenant IDs should be case-sensitive
+    assertTrue(recordFilter.acceptTenant(createTenantOwned("tenantA")));
+    assertFalse(recordFilter.acceptTenant(createTenantOwned("tenanta")));
+    assertFalse(recordFilter.acceptTenant(createTenantOwned("TENANTA")));
+  }
+
   @Test
   public void testEmptyConfigurationAcceptsDefault() {
     // Test with empty configuration - should accept all types
@@ -97,6 +116,7 @@ public class RecordFilterTest {
     emptyConfig.setEnabledRecordTypes("");
     emptyConfig.setEnabledValueTypes("");
     emptyConfig.setEnabledIntents("");
+    emptyConfig.setEnabledTenants("");
 
     RecordFilter emptyFilter = new RecordFilter(emptyConfig);
 
@@ -117,6 +137,9 @@ public class RecordFilterTest {
       // Should accept all intents when configuration is empty
       assertTrue(emptyFilter.acceptIntent(intent));
     }
+
+    // Should accept default tenants when configuration is empty
+    assertTrue(emptyFilter.acceptTenant(createTenantOwned(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
   }
 
   @Test
@@ -126,6 +149,7 @@ public class RecordFilterTest {
     whitespaceConfig.setEnabledRecordTypes(" EVENT , COMMAND ");
     whitespaceConfig.setEnabledValueTypes(" USER_TASK , JOB ");
     whitespaceConfig.setEnabledIntents(" CREATED , UPDATED ");
+    whitespaceConfig.setEnabledTenants(" tenantA , tenantB ");
 
     RecordFilter whitespaceFilter = new RecordFilter(whitespaceConfig);
 
@@ -133,6 +157,17 @@ public class RecordFilterTest {
     assertTrue(whitespaceFilter.acceptValue(ValueType.USER_TASK));
     assertTrue(whitespaceFilter.acceptIntent(JobIntent.CREATED));
     assertTrue(whitespaceFilter.acceptIntent(JobIntent.UPDATED));
+    assertTrue(whitespaceFilter.acceptTenant(createTenantOwned("tenantA")));
+  }
+
+  // Helper method to create a TenantOwned implementation
+  private TenantOwned createTenantOwned(String tenantId) {
+    return new TenantOwned() {
+      @Override
+      public String getTenantId() {
+        return tenantId;
+      }
+    };
   }
 
   // Test implementation of ExporterConfiguration
@@ -140,6 +175,7 @@ public class RecordFilterTest {
     private String enabledRecordTypes = "";
     private String enabledValueTypes = "";
     private String enabledIntents = "";
+    private String enabledTenants = "";
 
     @Override
     public String getEnabledRecordTypes() {
@@ -166,6 +202,15 @@ public class RecordFilterTest {
 
     public void setEnabledIntents(String enabledIntents) {
       this.enabledIntents = enabledIntents;
+    }
+    
+    @Override
+    public String getEnabledTenants() {
+      return enabledTenants;
+    }
+
+    public void setEnabledTenants(String enabledTenants) {
+      this.enabledTenants = enabledTenants;
     }
   }
 }

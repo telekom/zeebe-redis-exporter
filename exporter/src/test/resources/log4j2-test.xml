@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+
+    <Appenders>
+        <!-- Console appender for test output -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+        
+        <!-- File appender for test logs -->
+        <File name="TestFile" fileName="target/test-logs/zeebe-redis-exporter-test.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <!-- Zeebe core logging -->
+        <Logger name="io.zeebe" level="info"/>
+        <Logger name="io.zeebe.broker" level="info"/>
+        <Logger name="io.zeebe.broker.exporter" level="debug"/>
+        
+        <!-- Redis exporter specific logging -->
+        <Logger name="io.zeebe.redis" level="debug"/>
+        <Logger name="io.zeebe.redis.exporter" level="debug"/>
+        
+        <!-- Test container logging -->
+        <Logger name="io.zeebe.redis.testcontainers" level="debug"/>
+        
+        <!-- Testcontainers framework -->
+        <Logger name="org.testcontainers" level="info"/>
+        <Logger name="com.github.dockerjava" level="warn"/>
+        
+        <!-- Redis client logging -->
+        <Logger name="io.lettuce" level="info"/>
+        
+        <!-- OAuth and authentication -->
+        <Logger name="io.camunda.zeebe.client.impl.oauth" level="debug"/>
+        
+        <!-- Camunda Identity -->
+        <Logger name="io.camunda.identity" level="info"/>
+        
+        <!-- Keycloak -->
+        <Logger name="org.keycloak" level="info"/>
+        
+        <!-- Suppress verbose HTTP client logs -->
+        <Logger name="org.apache.http" level="warn"/>
+        <Logger name="httpclient" level="warn"/>
+        
+        <!-- Suppress Netty verbose logs -->
+        <Logger name="io.netty" level="warn"/>
+        <Logger name="io.grpc.netty" level="warn"/>
+        
+        <!-- Root logger -->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Root>
+    </Loggers>
+
+</Configuration>
