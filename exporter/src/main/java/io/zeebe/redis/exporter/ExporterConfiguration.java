@@ -18,6 +18,9 @@ public class ExporterConfiguration {
   private String enabledValueTypes = "";
   private String enabledRecordTypes = "";
   private String enabledIntents = "";
+  private String enabledTenants = "";
+
+  private boolean enableTenantStreams = false;
 
   private String name = "zeebe";
 
@@ -110,6 +113,14 @@ public class ExporterConfiguration {
     return getEnv("ENABLED_INTENTS").orElse(enabledIntents);
   }
 
+  public String getEnabledTenants() {
+    return getEnv("ENABLED_TENANTS").orElse(enabledTenants);
+  }
+
+  public boolean isEnableTenantStreams() {
+    return getEnv("ENABLE_TENANT_STREAMS").map(Boolean::parseBoolean).orElse(enableTenantStreams);
+  }
+
   public String getName() {
     return getEnv("NAME").orElse(name);
   }
@@ -151,6 +162,11 @@ public class ExporterConfiguration {
         + ", enabledIntents='"
         + getEnabledIntents()
         + '\''
+        + ", enabledTenants='"
+        + getEnabledTenants()
+        + '\''
+        + ", enableTenantStreams="
+        + isEnableTenantStreams()
         + ", format='"
         + getFormat()
         + '\''

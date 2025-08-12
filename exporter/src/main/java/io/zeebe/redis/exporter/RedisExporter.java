@@ -4,6 +4,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisConnectionException;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -24,6 +25,7 @@ public class RedisExporter implements Exporter {
 
   private ExporterConfiguration config;
   private Logger logger;
+  private RecordFilter recordFilter;
 
   private UniversalRedisClient redisClient;
   private UniversalRedisConnection<String, ?> cleanupConnection;
@@ -69,6 +71,7 @@ public class RedisExporter implements Exporter {
     streamPrefix = config.getStreamPrefix();
 
     final RecordFilter filter = new RecordFilter(config);
+    this.recordFilter = filter;
     context.setFilter(filter);
 
     configureFormat();
@@ -216,7 +219,25 @@ public class RedisExporter implements Exporter {
 
   @Override
   public void export(Record<?> record) {
-    final String stream = streamPrefix.concat(record.getValueType().name());
+    final String stream;
+    if (config.isEnableTenantStreams()) {
+      if (!(record.getValue() instanceof TenantOwned tenantOwned)) {
+        logger.debug(
+            "Skipping record for non-TenantOwned value type: {}", record.getValueType().name());
+        return;
+      }
+      if (!recordFilter.acceptTenant(tenantOwned)) {
+        logger.debug("Skipping record for unaccepted tenant: {}", tenantOwned.getTenantId());
+        return;
+      }
+      stream =
+          streamPrefix
+              .concat(record.getValueType().name())
+              .concat(":")
+              .concat(tenantOwned.getTenantId());
+    } else {
+      stream = streamPrefix.concat(record.getValueType().name());
+    }
     final TransformedRecord transformedRecord = recordTransformer.apply(record);
     final RedisEvent redisEvent =
         new RedisEvent(

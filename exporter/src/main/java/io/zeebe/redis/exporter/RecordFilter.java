@@ -4,6 +4,8 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +18,7 @@ public final class RecordFilter implements Context.RecordFilter {
   private final List<ValueType> enabledValueTypes;
   private final List<Intent> enabledIntents;
   private final Map<Class<? extends Intent>, List<Intent>> enabledIntentsStrict;
+  private final List<String> enabledTenants;
 
   public RecordFilter(ExporterConfiguration config) {
     final List<String> enabledRecordTypeList =
@@ -64,6 +67,14 @@ public final class RecordFilter implements Context.RecordFilter {
                               .filter(intent -> intentNames.contains(intent.name()))
                               .collect(Collectors.toList());
                         }));
+
+    final List<String> enabledTenantList =
+        ExporterConfiguration.parseAsList(config.getEnabledTenants());
+    enabledTenants =
+        enabledTenantList.isEmpty()
+            // ? Collections.singletonList(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            ? new ArrayList<>()
+            : enabledTenantList;
   }
 
   @Override
@@ -89,5 +100,14 @@ public final class RecordFilter implements Context.RecordFilter {
     }
     // Fallback to the fuzzy list-based filtering
     return enabledIntents.contains(intent);
+  }
+
+  public boolean acceptTenant(TenantOwned tenantOwnedRecord) {
+    final String tenantId = tenantOwnedRecord.getTenantId();
+    if (enabledTenants.isEmpty()) {
+      // If no tenants are specified, accept all tenants
+      return true;
+    }
+    return enabledTenants.contains(tenantId);
   }
 }
