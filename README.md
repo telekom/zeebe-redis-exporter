@@ -191,6 +191,7 @@ In the Zeebe configuration, you can furthermore change
 * whether to use a cluster client
 * the value and record types which are exported
 * the intents which are exported (with fuzzy or strict filtering)
+* the tenants which are exported (with optional tenant-specific streams)
 * the name resulting in a stream prefix
 * the cleanup cycle
 * the minimum time-to-live of exported records
@@ -223,6 +224,12 @@ zeebe:
           
           # comma separated list or map of io.camunda.zeebe.protocol.record.intent.Intent to export or empty to export all intents.
           enabledIntents: ""
+          
+          # comma separated list of tenant IDs to export or empty to export all tenants
+          enabledTenants: ""
+          
+          # whether to create tenant-specific streams (e.g., zeebe:JOB:<tenantId>)
+          enableTenantStreams: false
         
           # Redis Stream prefix
           name: "zeebe"
@@ -346,6 +353,43 @@ When `ZEEBE_REDIS_ENABLED_INTENTS` is not configured or empty, all intents are e
 The exporter automatically detects the filtering mode based on the configuration format:
 - Contains `=` → Strict filtering mode
 - No `=` → Fuzzy filtering mode
+
+#### Tenant Filtering
+*Since ?*
+
+The exporter supports tenant filtering to control which tenants' records are exported and optionally create tenant-specific Redis streams:
+
+| **Parameter**                        | **Description**                                                                                                                                         |
+|--------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ZEEBE_REDIS_ENABLED_TENANTS`        | Controls which tenants are exported. Comma-separated list of tenant IDs or empty to export all tenants.                                               |
+| `ZEEBE_REDIS_ENABLE_TENANT_STREAMS`  | Whether to create tenant-specific streams. Default is `false`. When `true`, creates streams like `zeebe:JOB:tenant1`, `zeebe:PROCESS:tenant2`, etc.  |
+
+##### - Basic Tenant Filtering
+
+Export records only from specific tenants:
+```
+ZEEBE_REDIS_ENABLED_TENANTS="tenant1,tenant2,tenant3"
+```
+
+This will export records only from the specified tenants to the standard streams (e.g., `zeebe:JOB`, `zeebe:PROCESS`).
+
+##### - Tenant-Specific Streams
+
+Create separate streams for each tenant:
+```
+ZEEBE_REDIS_ENABLED_TENANTS="tenant1,tenant2"
+ZEEBE_REDIS_ENABLE_TENANT_STREAMS=true
+```
+
+This creates tenant-specific streams:
+- `zeebe:JOB:tenant1` - Job records from tenant1
+- `zeebe:JOB:tenant2` - Job records from tenant2  
+- `zeebe:PROCESS:tenant1` - Process records from tenant1
+- `zeebe:PROCESS:tenant2` - Process records from tenant2
+
+##### - Default Behavior
+
+When `ZEEBE_REDIS_ENABLED_TENANTS` is not configured or empty, all tenants are exported (maintains backward compatibility). When `ZEEBE_REDIS_ENABLE_TENANT_STREAMS` is `false` (default), all records go to standard streams regardless of tenant.
 
 #### Cleanup
 
