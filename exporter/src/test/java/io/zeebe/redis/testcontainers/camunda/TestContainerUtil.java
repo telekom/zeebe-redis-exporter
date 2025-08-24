@@ -485,6 +485,32 @@ public class TestContainerUtil {
     stopRedis();
   }
 
+  public void stopIdentity(final TestContext testContext) {
+    testContext.setExternalIdentityHost(null);
+    testContext.setInternalIdentityHost(null);
+    if (identityContainer != null) {
+      identityContainer.stop();
+      identityContainer = null;
+    }
+
+    if (keycloakClient != null) {
+      keycloakClient.close();
+      keycloakClient = null;
+    }
+
+    if (keycloakContainer != null) {
+      keycloakContainer.stop();
+      keycloakContainer = null;
+    }
+
+    if (postgreSQLContainer != null) {
+      postgreSQLContainer.stop();
+      postgreSQLContainer = null;
+    }
+
+    closeNetwork();
+  }
+
   public Network getNetwork() {
     if (network == null) {
       network = Network.newNetwork();

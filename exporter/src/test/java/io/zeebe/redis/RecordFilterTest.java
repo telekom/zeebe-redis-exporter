@@ -8,13 +8,11 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.zeebe.redis.exporter.ExporterConfiguration;
 import io.zeebe.redis.exporter.RecordFilter;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.zeebe.redis.exporter.ExporterConfiguration;
-import io.zeebe.redis.exporter.RecordFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +92,7 @@ public class RecordFilterTest {
     assertTrue(recordFilter.acceptIntent(DeploymentIntent.CREATED));
   }
 
+  @Test
   public void testAcceptTenant() {
     // Test with allowed tenants
     assertTrue(recordFilter.acceptTenant(createTenantOwned("tenantA")));
@@ -203,7 +202,7 @@ public class RecordFilterTest {
     public void setEnabledIntents(String enabledIntents) {
       this.enabledIntents = enabledIntents;
     }
-    
+
     @Override
     public String getEnabledTenants() {
       return enabledTenants;

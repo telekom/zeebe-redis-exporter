@@ -96,7 +96,7 @@ public class ExporterTenantTest {
 
   @AfterAll
   public static void tearDown() throws IOException {
-    // testContainerUtil.stopZeebeAndRedis(testContext);
+    testContainerUtil.stopIdentity(testContext);
   }
 
   @Test
