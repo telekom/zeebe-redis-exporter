@@ -219,25 +219,11 @@ public class RedisExporter implements Exporter {
 
   @Override
   public void export(Record<?> record) {
-    final String stream;
-    if (config.isEnableTenantStreams()) {
-      if (!(record.getValue() instanceof TenantOwned tenantOwned)) {
-        logger.debug(
-            "Skipping record for non-TenantOwned value type: {}", record.getValueType().name());
-        return;
-      }
-      if (!recordFilter.acceptTenant(tenantOwned)) {
-        logger.debug("Skipping record for unaccepted tenant: {}", tenantOwned.getTenantId());
-        return;
-      }
-      stream =
-          streamPrefix
-              .concat(record.getValueType().name())
-              .concat(":")
-              .concat(tenantOwned.getTenantId());
-    } else {
-      stream = streamPrefix.concat(record.getValueType().name());
+    final String stream = determineStream(record);
+    if (stream == null) {
+      return;
     }
+
     final TransformedRecord transformedRecord = recordTransformer.apply(record);
     final RedisEvent redisEvent =
         new RedisEvent(
@@ -247,6 +233,30 @@ public class RedisExporter implements Exporter {
             transformedRecord.memorySize);
     eventQueue.addEvent(new ImmutablePair<>(record.getPosition(), redisEvent));
     redisCleaner.considerStream(stream);
+  }
+
+  private String determineStream(Record<?> record) {
+    if (!config.isEnableTenantStreams()) {
+      return streamPrefix.concat(record.getValueType().name());
+    }
+
+    if (!(record.getValue() instanceof TenantOwned tenantOwned)) {
+      logger.debug(
+          "Skipping record for non-TenantOwned value type: {}", record.getValueType().name());
+      controller.updateLastExportedRecordPosition(record.getPosition());
+      return null;
+    }
+
+    if (!recordFilter.acceptTenant(tenantOwned)) {
+      logger.debug("Skipping record for unaccepted tenant: {}", tenantOwned.getTenantId());
+      controller.updateLastExportedRecordPosition(record.getPosition());
+      return null;
+    }
+
+    return streamPrefix
+        .concat(record.getValueType().name())
+        .concat(":")
+        .concat(tenantOwned.getTenantId());
   }
 
   private void sendBatches() {
